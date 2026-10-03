@@ -76,3 +76,74 @@ HALL ||--o{ SCREENING → один до багатьох — один зал п�
 USER ||--o{ TICKET → один до багатьох — один користувач може мати багато квитків.
 SCREENING ||--o{ TICKET → один до багатьох — один сеанс має багато квитків.
 Важливий момент для твоєї курсової: за умовою, яку ти дав, для MOVIE ↔ GENRE не треба додавати проміжну сутність типу MOVIE_GENRE, бо ти просив саме ER-модель і явно задав звичайний M:N зв'язок. Це відповідає твоїм вимогам до цього завдання.
+
+Привіт! Сьогодні ти мій джун, а я твій начальник
+Згенеруй ER-діаграму для системи бронювання кінотеатру у форматі Mermaid
+Ось такі мають бути сутності та їхні атрибути:
+1. USER (Користувач): id, email, phone, name
+2. MOVIE (Фільм): id, title, duration_minutes, age_rating
+3. GENRE (Жанр): id, name
+4. HALL (Зал): id, name, capacity
+5. SCREENING (Сеанс): id, movie_id, hall_id, start_time, price
+6. TICKET (Квиток): id, screening_id, user_id, seat_row, seat_number, status
+Як вони пов'язані між собою:
+- Фільм і Жанр мають зв'язок багато до багатьох
+- Фільм і Сеанс - один до багатьох
+- Зал і Сеанс - один до багатьох
+- Користувач і Квиток - один до багатьох
+- Сеанс і Квиток - один до багатьох
+Напиши це все правильним синтаксисом Mermaid erDiagram!
+
+Додаткові вимоги:
+- Всі ідентифікатори (id та зовнішні ключі) обов'язково повинні мати тип string
+Онови код діаграми враховуючи ці нові вимоги
+
+erDiagram
+
+    USER {
+        string id PK
+        string email
+        string phone
+        string name
+    }
+
+    MOVIE {
+        string id PK
+        string title
+        int duration_minutes
+        string age_rating
+    }
+
+    GENRE {
+        string id PK
+        string name
+    }
+
+    HALL {
+        string id PK
+        string name
+        int capacity
+    }
+
+    SCREENING {
+        string id PK
+        string movie_id FK
+        string hall_id FK
+        datetime start_time
+        decimal price
+    }
+
+    TICKET {
+        string id PK
+        string screening_id FK
+        string user_id FK
+        int seat_row
+        int seat_number
+        string status
+    }
+
+    MOVIE }o--o{ GENRE : has
+    MOVIE ||--o{ SCREENING : has
+    HALL ||--o{ SCREENING : hosts
+    USER ||--o{ TICKET : buys
+    SCREENING ||--o{ TICKET : contains
