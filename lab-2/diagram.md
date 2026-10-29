@@ -1,3 +1,4 @@
+```mermaid
 graph TD
 
     Guest["Гість (Відвідувач)"]
@@ -21,3 +22,4 @@ graph TD
     UC4 .->|extend| UC2
 
     Gateway --> UC4
+```
