@@ -1,8 +1,4 @@
 ## Діаграма 1 - віп оплата
-
-![Діаграма 1](diagram1.png)
-
-## Код діаграми
 ```
 sequenceDiagram
     actor User as Користувач
