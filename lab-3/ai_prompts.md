@@ -165,3 +165,59 @@ diagram4.md — activation bar і непоказана реакція на ін�
 
 Що уточнити в spec.md
 Точку відліку 10 хвилин: від створення замовлення чи від першої спроби оплати; також що саме рахується дедлайном — час фактичного успіху платежу чи час отримання вебхука системою.
+
+## Діалог 3 - Виправлення віп знижки
+
+**Запит:**
+
+Привіт, я переглянув твої діаграми та помітив помилку в diagram1.md. У першому сценарії користувач уже має VIP-статус, тому знижка 10% повинна застосовуватися обов'язково, а ти показав її через opt, ніби це необов'язкова дія. Я вже додав це уточнення в lab-3/spec.md, тому переглянь його та виправ першу діаграму відповідно до нової вимоги. Також перевір, щоб перед зміною статусу замовлення на Paid система переконувалася, що замовлення ще Pending і 10 хвилин не минули. Не забудь, що за вимогами лабораторної в діаграмі має залишитися хоча б один фрагмент alt, opt або loop, а також правильні activation bars і відповіді між компонентами. Інші три діаграми та файли spec.md і другої лабораторної поки не змінюй. Після виправлення коротко поясни, що саме ти змінив
+
+**Відповідь:**
+
+Виправив лише diagram1.md:
+```
+sequenceDiagram
+    actor User as Користувач
+    participant UI as Інтерфейс
+    participant Orders as Сервіс замовлень
+    participant Gateway as Платіжний шлюз
+    participant Tickets as Сервіс квитків
+    participant Email as Email-сервіс
+
+    activate User
+    User->>UI: confirmPayment(orderId)
+    activate UI
+    UI->>Orders: pay(orderId)
+    activate Orders
+    Orders->>Orders: calculateTotal(orderId)
+    Orders->>Orders: applyDiscount(10%)
+    Orders->>Gateway: charge(orderId, сума зі знижкою)
+    activate Gateway
+    Gateway-->>Orders: paymentResult(Success, within 10 minutes)
+    deactivate Gateway
+    Orders->>Orders: markPaidIfPendingBeforeDeadline(orderId)
+    Orders-->>Orders: transitionResult(updated/notUpdated)
+    alt Статус змінено на Paid до завершення 10 хвилин
+        Orders->>Tickets: generateTickets(orderId, QR-коди)
+        activate Tickets
+        Tickets-->>Orders: ticketsCreated(tickets)
+        deactivate Tickets
+        Orders->>Email: sendTickets(userEmail, tickets)
+        activate Email
+        Email-->>Orders: emailSent
+        deactivate Email
+    else Замовлення не Pending або минуло 10 хвилин
+        Note over Orders: Статус не змінюється, квитки не створюються
+    end
+    Orders-->>UI: paymentResult(transitionResult)
+    deactivate Orders
+    UI-->>User: showPaymentResult(transitionResult)
+    deactivate UI
+    deactivate User
+```
+- Зробив застосування знижки 10% обов’язковим кроком, без opt.
+- Додав перехід markPaidIfPendingBeforeDeadline, який встановлює Paid лише якщо замовлення ще Pending і 10 хвилин не минули. У alt квитки створюються лише після успішного переходу; інакше статус не змінюється.
+- Відповідь інтерфейсу тепер відображає фактичний результат переходу, а activation bar користувача починається перед його дією.
+Перевірка git diff --check пройшла. Інші діаграми та файли не змінював.
+
+
