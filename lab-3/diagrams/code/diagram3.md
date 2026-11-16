@@ -1,4 +1,32 @@
-## Діаграма 3 — завершення часу оплати
+
+## Діаграма 3 - звершення часу оплати
+
+**Початковий код:**
+
+```
+sequenceDiagram
+    participant Timer as Таймер оплати
+    participant Orders as Сервіс замовлень
+    participant Reservations as Сервіс бронювання місць
+
+    Note over Timer: Від створення замовлення минуло 10 хвилин
+    Timer->>Orders: timeout(orderId)
+    activate Timer
+    activate Orders
+    Orders->>Orders: hasPaymentConfirmation(orderId)
+    Orders-->>Orders: false
+    opt Підтвердження оплати не отримано
+        Orders->>Orders: setStatus(orderId, Cancelled)
+        Orders->>Reservations: releaseSeats(orderId)
+        activate Reservations
+        Reservations-->>Orders: seatsReleased
+        deactivate Reservations
+    end
+    deactivate Orders
+    deactivate Timer
+```
+
+**Виправлений код:**
 
 ```
 sequenceDiagram
