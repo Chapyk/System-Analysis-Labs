@@ -1,4 +1,38 @@
+
 ## Діаграма 2 - відхилення оплати
+
+**Початковий код:**
+
+```
+sequenceDiagram
+    actor User as Користувач
+    participant UI as Інтерфейс
+    participant Orders as Сервіс замовлень
+    participant Gateway as Платіжний шлюз
+    participant Timer as Таймер оплати
+
+    User->>UI: initiatePayment(orderId)
+    activate User
+    activate UI
+    UI->>Orders: pay(orderId)
+    activate Orders
+    Orders->>Gateway: charge(orderId, поточна сума)
+    activate Gateway
+    Gateway-->>Orders: paymentResult(Insufficient funds)
+    deactivate Gateway
+    alt До завершення 10-хвилинного таймера
+        Orders->>Orders: keepStatus(orderId, Pending)
+        Note over Orders,Timer: Таймер продовжує відлік
+        Orders-->>UI: paymentFailed(Insufficient funds)
+        UI-->>User: showErrorAndSuggestRetry()
+    end
+    deactivate Orders
+    deactivate UI
+    deactivate User
+```
+
+**Виправлений код:**
+
 ```
 sequenceDiagram
     actor User as Користувач
