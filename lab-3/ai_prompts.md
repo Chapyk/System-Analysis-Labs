@@ -220,4 +220,74 @@ sequenceDiagram
 - Відповідь інтерфейсу тепер відображає фактичний результат переходу, а activation bar користувача починається перед його дією.
 Перевірка git diff --check пройшла. Інші діаграми та файли не змінював.
 
+## Діалог 4 - виправлення таймера оплати
 
+**Запит:**
+
+Привіт, тепер потрібно виправити другу sequence-діаграму, бо під час перевірки ми знайшли проблему з роботою 10-хвилинного таймера. Я вже додав уточнення в lab-3/spec.md: таймер запускається під час створення замовлення, після відхилення оплати продовжує працювати, а повторна спроба не запускає його заново. Переглянь spec.md і виправ lab-3/diagrams/code/diagram2.md відповідно до цих вимог. Покажи, що платіжний шлюз відхиляє оплату через Insufficient funds, замовлення залишається Pending, користувач бачить помилку й може повторити оплату до завершення 10 хвилин. Врахуй, що цей сценарій описує відхилення платежу, а не скасування замовлення. Зроби зрозумілий фрагмент alt, opt або loop, правильно покажи виклики, відповіді й activation bars. Не змінюй інші діаграми, spec.md та файли попередніх лабораторних. Після виправлення коротко поясни, що змінив.
+
+**Відповідь:**
+
+Виправив diagram2.md:
+```
+sequenceDiagram
+    actor User as Користувач
+    participant UI as Інтерфейс
+    participant Orders as Сервіс замовлень
+    participant Timer as Таймер оплати
+    participant Gateway as Платіжний шлюз
+
+    activate User
+    User->>UI: createOrder()
+    activate UI
+    UI->>Orders: createOrder()
+    activate Orders
+    Orders->>Orders: saveOrder(status=Pending)
+    Orders->>Timer: startPaymentTimer(orderId, 10 хвилин)
+    activate Timer
+    Timer-->>Orders: timerStarted(deadline)
+    deactivate Timer
+    Orders-->>UI: orderCreated(orderId, Pending, deadline)
+    deactivate Orders
+    UI-->>User: showOrderPending(orderId, deadline)
+    deactivate UI
+
+    User->>UI: payOrder(orderId)
+    activate UI
+    UI->>Orders: pay(orderId)
+    activate Orders
+    Orders->>Gateway: charge(orderId, amount)
+    activate Gateway
+    Gateway-->>Orders: paymentRejected("Insufficient funds")
+    deactivate Gateway
+    Note over Orders: Замовлення залишається Pending
+    Orders-->>UI: paymentFailed(Pending, "Insufficient funds")
+    deactivate Orders
+    UI-->>User: showPaymentError("Insufficient funds", retryUntil=deadline)
+    deactivate UI
+
+    loop Повторні спроби до дедлайну — 10 хвилин від створення замовлення
+        User->>UI: retryPayment(orderId)
+        activate UI
+        UI->>Orders: retryPayment(orderId)
+        activate Orders
+        Orders->>Orders: verifyPendingBeforeDeadline(orderId, deadline)
+        activate Orders
+        Orders-->>Orders: Pending, дедлайн ще не настав
+        deactivate Orders
+        Orders->>Gateway: charge(orderId, amount)
+        activate Gateway
+        Gateway-->>Orders: paymentRejected("Insufficient funds")
+        deactivate Gateway
+        Note over Orders: Статус Pending; таймер продовжує працювати
+        Orders-->>UI: paymentFailed(Pending, "Insufficient funds")
+        deactivate Orders
+        UI-->>User: showPaymentError("Insufficient funds", retryUntil=deadline)
+        deactivate UI
+    end
+    Note over Timer,User: Повторна спроба не перезапускає таймер; після дедлайну повторити оплату не можна
+    deactivate User
+```
+таймер запускається під час створення замовлення, а повторні спроби використовують той самий дедлайн. Діаграма показує відмову шлюзу з причиною Insufficient funds, статус Pending, повідомлення користувачу та цикл повторних спроб до завершення 10 хвилин. Скасування замовлення не показується.
+
+Змінено лише цю діаграму; перевірив її вміст. Тести не запускав — це документаційна зміна.
