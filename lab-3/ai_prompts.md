@@ -291,3 +291,63 @@ sequenceDiagram
 таймер запускається під час створення замовлення, а повторні спроби використовують той самий дедлайн. Діаграма показує відмову шлюзу з причиною Insufficient funds, статус Pending, повідомлення користувачу та цикл повторних спроб до завершення 10 хвилин. Скасування замовлення не показується.
 
 Змінено лише цю діаграму; перевірив її вміст. Тести не запускав — це документаційна зміна.
+
+## Діалог 5 - виправлення скасування замовлення
+
+**Запит:**
+
+тепер потрібно виправити третю sequence-діаграму, бо під час перевірки ми помітили, що система не перевіряє статус замовлення перед скасуванням, а повторне спрацювання таймера може призвести до повторного скасування. Я вже додав відповідне уточнення в lab-3/spec.md, тому переглянь його та виправ lab-3/diagrams/code/diagram3.md. Потрібно показати, що після завершення 10 хвилин система перевіряє, чи замовлення ще має статус Pending і чи не була підтверджена оплата. Тільки в такому випадку змінюй статус на Cancelled і звільняй заброньовані місця. Якщо замовлення вже Paid або Cancelled, нічого повторно скасовувати чи звільняти не потрібно. Використай зрозумілий фрагмент alt, покажи виклики, відповіді й правильні activation bars. Не змінюй spec.md, інші діаграми та файли попередніх лабораторних. Після виправлення коротко поясни, що змінив
+
+**Відповідь:**
+
+Переглянув актуальне уточнення в spec.md. diagram3.md уже перевіряє статус і підтвердження оплати: скасування та звільнення місць відбуваються лише для Pending без підтвердженої оплати. Для Paid або Cancelled повторні дії не виконуються. Діаграма вже відповідає вимогам, тому змінювати файли не довелося.
+
+**Запит:**
+
+але я помітив ще один момент у diagram3.md. Метод cancelIfPendingAndUnpaid перевіряє умови скасування, проте на діаграмі після нього одразу звільняються місця. А якщо за цей час замовлення вже стало Paid або Cancelled? Переглянь третю діаграму та покажи, що місця звільняються тільки тоді, коли метод справді змінив статус із Pending на Cancelled. Якщо скасування не відбулося, місця звільняти не потрібно. Виправ тільки lab-3/diagrams/code/diagram3.md, збережи правильні activation bars та фрагменти alt, а інші файли не змінюй. Після цього коротко поясни зміни
+
+**Відповідь:**
+
+У diagram3.md:
+```
+sequenceDiagram
+    participant Timer as Таймер оплати
+    participant Orders as Сервіс замовлень
+    participant Payments as Сервіс платежів
+    participant Reservations as Сервіс бронювання місць
+
+    Note over Timer: Минуло 10 хвилин від створення замовлення
+    activate Timer
+    Timer->>Orders: timeout(orderId)
+    activate Orders
+    Orders->>Orders: getOrderStatus(orderId)
+    activate Orders
+    Orders-->>Orders: status(Pending | Paid | Cancelled)
+    deactivate Orders
+    Orders->>Payments: hasPaymentConfirmation(orderId)
+    activate Payments
+    Payments-->>Orders: paymentConfirmed(true | false)
+    deactivate Payments
+
+    alt status == Pending and paymentConfirmed == false
+        Orders->>Orders: cancelIfPendingAndUnpaid(orderId)
+        activate Orders
+        Orders-->>Orders: cancellationResult(cancelled, currentStatus)
+        deactivate Orders
+        alt cancelled == true
+            Orders->>Reservations: releaseSeats(orderId)
+            activate Reservations
+            Reservations-->>Orders: seatsReleased
+            deactivate Reservations
+        else cancelled == false
+            Note over Orders,Reservations: Статус не змінився; місця не звільняються
+        end
+        Orders-->>Timer: timeoutProcessed(cancellationResult)
+    else status == Paid or status == Cancelled or paymentConfirmed == true
+        Note over Orders: Не скасовувати повторно й не звільняти місця
+        Orders-->>Timer: timeoutIgnored(currentStatus)
+    end
+    deactivate Orders
+    deactivate Timer
+```
+додав перевірку результату cancelIfPendingAndUnpaid: місця звільняються лише за cancelled == true. Якщо статус не змінився, діаграма показує, що місця залишаються заброньованими. Інші файли не змінював; тести не запускав, бо це документаційна зміна.
